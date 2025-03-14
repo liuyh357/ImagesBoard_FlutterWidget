@@ -89,7 +89,8 @@ class ImagesBoardManager with ChangeNotifier {
     backgroundLine = mousePosition -
         globalOffset +
         (backgroundLine - mousePosition + globalOffset) * (scale / oldScale);
-    print('backgroundLine: $backgroundLine mouse position: ${mousePosition - globalOffset}');
+    print(
+        'backgroundLine: $backgroundLine mouse position: ${mousePosition - globalOffset}');
     for (var item in imageItems) {
       item.updatePosition();
     }
@@ -256,6 +257,11 @@ class _ImagesBoardState extends State<ImagesBoard> {
                   child: IconButton(
                       onPressed: () {
                         Offset middle = Offset.zero;
+                        if (ImagesBoardManager().imageItems.isEmpty) {
+                          ImagesBoardManager().globalOffset =
+                              Offset(widget.width / 2, widget.height / 2);
+                          return;
+                        }
                         for (var item in ImagesBoardManager().imageItems) {
                           middle += item.localPosition;
                         }
@@ -445,7 +451,7 @@ class ImagesBoardPainter extends CustomPainter {
     canvas.drawRRect(rrect, borderPaint);
 
     final gridPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.5)
+      ..color = const Color.fromARGB(255, 198, 198, 198)
       ..strokeWidth = 1;
 
     // backgroundLine =
@@ -480,6 +486,38 @@ class ImagesBoardPainter extends CustomPainter {
       for (double y = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
           y < size.height;
           y += gridSpacing) {
+        canvas.drawCircle(
+          Offset(x, y),
+          3 * scale, // 格点半径
+          gridPaint,
+        );
+      }
+      for (double y = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
+          y >= 0;
+          y -= gridSpacing) {
+        canvas.drawCircle(
+          Offset(x, y),
+          3 * scale, // 格点半径
+          gridPaint,
+        );
+      }
+    }
+
+    for (double x = (backgroundLine.dx) % gridSpacing + globalOffset.dx;
+        x >= 0;
+        x -= gridSpacing) {
+      for (double y = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
+          y < size.height;
+          y += gridSpacing) {
+        canvas.drawCircle(
+          Offset(x, y),
+          3 * scale, // 格点半径
+          gridPaint,
+        );
+      }
+      for (double y = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
+          y >= 0;
+          y -= gridSpacing) {
         canvas.drawCircle(
           Offset(x, y),
           3 * scale, // 格点半径
