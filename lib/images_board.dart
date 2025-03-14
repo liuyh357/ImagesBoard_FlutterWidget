@@ -86,7 +86,11 @@ class ImagesBoardManager with ChangeNotifier {
     oldScale = scale;
     scale += s;
     scale = min(max(scale, minScale), maxScale);
-    for(var item in imageItems) {
+    backgroundLine = mousePosition -
+        globalOffset +
+        (backgroundLine - mousePosition + globalOffset) * (scale / oldScale);
+    print('backgroundLine: $backgroundLine mouse position: ${mousePosition - globalOffset}');
+    for (var item in imageItems) {
       item.updatePosition();
     }
     notifyListeners();
@@ -156,20 +160,18 @@ class _ImagesBoardState extends State<ImagesBoard> {
           ImagesBoardManager().mousePosition = event.localPosition;
           timer?.cancel();
           timer = Timer(const Duration(milliseconds: 50), () {
-            ImagesBoardManager().addScale(0, event.position);
+            ImagesBoardManager().addScale(0, event.localPosition);
           });
-          
-          
 
           if (ImagesBoardManager().enableDragging) {
             ImagesBoardManager()
-                .addScale(-event.scrollDelta.dy * 0.002, event.position);
+                .addScale(-event.scrollDelta.dy * 0.002, event.localPosition);
           } else {
             //todo：改成图片的坐标在这里更新
             for (var item in ImagesBoardManager().imageItems) {
               if (ImagesBoardManager().currentItemCode == item.code) {
                 item.addScale(-event.scrollDelta.dy * 0.002);
-                
+
                 ImagesBoardManager().clickFresh++;
                 ImagesBoardManager().updateView();
               }
@@ -218,10 +220,9 @@ class _ImagesBoardState extends State<ImagesBoard> {
           if (item.checkPointsOnTap(event.position)) {
             // print('点击了 点');
           }
-
         }
 
-        for(var line in ImagesBoardManager().lines) {
+        for (var line in ImagesBoardManager().lines) {
           if (line.isPointOnPath(event.localPosition)) {
             // print('点击了 线');
           }
@@ -277,63 +278,63 @@ class _ImagesBoardState extends State<ImagesBoard> {
 
 class ImagesBoardPainter extends CustomPainter {
   Path createSmoothPath(List<Offset> points) {
-  if (points.length < 2) {
-    return Path();
-  }
-
-  final path = Path();
-  path.moveTo(points[0].dx, points[0].dy);
-
-  for (int index = 0; index < points.length - 1; index++) {
-    final currentPoint = points[index];
-    final nextPoint = points[index + 1];
-
-    // 计算前一个点（边界处理）
-    final Offset previousPoint;
-    if (index == 0) {
-      // 外推：2 * currentPoint - nextPoint
-      previousPoint = Offset(
-        2 * currentPoint.dx - nextPoint.dx,
-        2 * currentPoint.dy - nextPoint.dy,
-      );
-    } else {
-      previousPoint = points[index - 1];
+    if (points.length < 2) {
+      return Path();
     }
 
-    // 计算后一个点（边界处理）
-    final Offset nextNextPoint;
-    if (index == points.length - 2) {
-      // 外推：2 * nextPoint - currentPoint
-      nextNextPoint = Offset(
-        2 * nextPoint.dx - currentPoint.dx,
-        2 * nextPoint.dy - currentPoint.dy,
+    final path = Path();
+    path.moveTo(points[0].dx, points[0].dy);
+
+    for (int index = 0; index < points.length - 1; index++) {
+      final currentPoint = points[index];
+      final nextPoint = points[index + 1];
+
+      // 计算前一个点（边界处理）
+      final Offset previousPoint;
+      if (index == 0) {
+        // 外推：2 * currentPoint - nextPoint
+        previousPoint = Offset(
+          2 * currentPoint.dx - nextPoint.dx,
+          2 * currentPoint.dy - nextPoint.dy,
+        );
+      } else {
+        previousPoint = points[index - 1];
+      }
+
+      // 计算后一个点（边界处理）
+      final Offset nextNextPoint;
+      if (index == points.length - 2) {
+        // 外推：2 * nextPoint - currentPoint
+        nextNextPoint = Offset(
+          2 * nextPoint.dx - currentPoint.dx,
+          2 * nextPoint.dy - currentPoint.dy,
+        );
+      } else {
+        nextNextPoint = points[index + 2];
+      }
+
+      // 计算贝塞尔曲线的控制点
+      final firstControlPoint = Offset(
+        currentPoint.dx + (nextPoint.dx - previousPoint.dx) / 6,
+        currentPoint.dy + (nextPoint.dy - previousPoint.dy) / 6,
       );
-    } else {
-      nextNextPoint = points[index + 2];
+      final secondControlPoint = Offset(
+        nextPoint.dx + (currentPoint.dx - nextNextPoint.dx) / 6,
+        nextPoint.dy + (currentPoint.dy - nextNextPoint.dy) / 6,
+      );
+
+      path.cubicTo(
+        firstControlPoint.dx,
+        firstControlPoint.dy,
+        secondControlPoint.dx,
+        secondControlPoint.dy,
+        nextPoint.dx,
+        nextPoint.dy,
+      );
     }
 
-    // 计算贝塞尔曲线的控制点
-    final firstControlPoint = Offset(
-      currentPoint.dx + (nextPoint.dx - previousPoint.dx) / 6,
-      currentPoint.dy + (nextPoint.dy - previousPoint.dy) / 6,
-    );
-    final secondControlPoint = Offset(
-      nextPoint.dx + (currentPoint.dx - nextNextPoint.dx) / 6,
-      nextPoint.dy + (currentPoint.dy - nextNextPoint.dy) / 6,
-    );
-
-    path.cubicTo(
-      firstControlPoint.dx,
-      firstControlPoint.dy,
-      secondControlPoint.dx,
-      secondControlPoint.dy,
-      nextPoint.dx,
-      nextPoint.dy,
-    );
+    return path;
   }
-
-  return path;
-}
 
   void drawLine(
       BoardLine line, Canvas canvas, Offset globalOffset, double globalScale) {
@@ -342,7 +343,7 @@ class ImagesBoardPainter extends CustomPainter {
       ..color = line.color
       ..strokeWidth = line.width * globalScale * line.scale
       ..style = PaintingStyle.stroke;
-      
+
     line.path = createSmoothPath(points);
     canvas.drawPath(line.path, paint);
     // print('绘制线');
@@ -447,30 +448,47 @@ class ImagesBoardPainter extends CustomPainter {
       ..color = Colors.grey.withOpacity(0.5)
       ..strokeWidth = 1;
 
-    backgroundLine =
-        mousePosition + (backgroundLine - mousePosition) * (scale / oldScale);
+    // backgroundLine =
+    //     mousePosition + (backgroundLine - mousePosition) * (scale / oldScale);
     // 绘制垂直网格线
-    for (double x = (backgroundLine.dx + globalOffset.dx) % gridSpacing;
+    // for (double x = (backgroundLine.dx) % gridSpacing  + globalOffset.dx;
+    //     x < size.width;
+    //     x += gridSpacing) {
+    //   canvas.drawLine(
+    //     Offset(x, 0),
+    //     Offset(x, size.height),
+    //     gridPaint,
+    //   );
+    // }
+
+    // // 绘制水平网格线
+    // for (double y = (backgroundLine.dy ) % gridSpacing + globalOffset.dy;
+    //     y < size.height;
+    //     y += gridSpacing) {
+    //   canvas.drawLine(
+    //     Offset(0, y),
+    //     Offset(size.width, y),
+    //     gridPaint,
+    //   );
+    // }
+    // 绘制 backgroundLine 为绿色原点
+
+    // 绘制垂直网格线（改为格点）
+    for (double x = (backgroundLine.dx) % gridSpacing + globalOffset.dx;
         x < size.width;
         x += gridSpacing) {
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        gridPaint,
-      );
+      for (double y = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
+          y < size.height;
+          y += gridSpacing) {
+        canvas.drawCircle(
+          Offset(x, y),
+          3 * scale, // 格点半径
+          gridPaint,
+        );
+      }
     }
 
-    // 绘制水平网格线
-    for (double y = (backgroundLine.dy + globalOffset.dy) % gridSpacing;
-        y < size.height;
-        y += gridSpacing) {
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
-    }
-    for(var line in imagesBoardManager.lines) {
+    for (var line in imagesBoardManager.lines) {
       drawLine(line, canvas, globalOffset, scale);
     }
     for (var item in ImagesBoardManager().imageItems) {
