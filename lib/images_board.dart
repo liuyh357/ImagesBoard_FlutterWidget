@@ -94,6 +94,9 @@ class ImagesBoardManager with ChangeNotifier {
     for (var item in imageItems) {
       item.updatePosition();
     }
+    for(var line in lines){
+      line.updatePointsPosition(); 
+    }
     notifyListeners();
   }
 

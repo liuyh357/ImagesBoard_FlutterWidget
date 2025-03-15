@@ -204,8 +204,14 @@ class BoardLine {
   BoardLine(this.points, this.code);
 
   void updatePointsPosition(){
+    var mng = ImagesBoardManager();
+    var globalOffset = mng.globalOffset;
+    var mousePosition = mng.mousePosition - globalOffset;
+    var deltaScale = mng.scale/mng.oldScale;
+    
     for (int i = 1; i < points.length - 1; i++){
-      
+      var point = points[i];
+      point.position = (point.position - mousePosition) * deltaScale + mousePosition;
     }
   }
   void addPoint() {
