@@ -224,7 +224,7 @@ class _ImagesBoardState extends State<ImagesBoard> {
         }
 
         for (var line in ImagesBoardManager().lines) {
-          if (line.isPointOnPath(event.localPosition)) {
+          if (line.isPointOnPath(event.position)) {
             // print('点击了 线');
           }
         }
@@ -352,7 +352,9 @@ class ImagesBoardPainter extends CustomPainter {
 
     line.path = createSmoothPath(points);
     canvas.drawPath(line.path, paint);
-    // print('绘制线');
+    for (int i = 1; i < line.points.length - 1; i++) {
+      drawPoint(line.points[i], canvas, globalOffset, globalScale);
+    }
   }
 
   void drawPoint(
@@ -453,71 +455,16 @@ class ImagesBoardPainter extends CustomPainter {
     final gridPaint = Paint()
       ..color = const Color.fromARGB(255, 198, 198, 198)
       ..strokeWidth = 1;
-
-    // backgroundLine =
-    //     mousePosition + (backgroundLine - mousePosition) * (scale / oldScale);
-    // 绘制垂直网格线
-    // for (double x = (backgroundLine.dx) % gridSpacing  + globalOffset.dx;
-    //     x < size.width;
-    //     x += gridSpacing) {
-    //   canvas.drawLine(
-    //     Offset(x, 0),
-    //     Offset(x, size.height),
-    //     gridPaint,
-    //   );
-    // }
-
-    // // 绘制水平网格线
-    // for (double y = (backgroundLine.dy ) % gridSpacing + globalOffset.dy;
-    //     y < size.height;
-    //     y += gridSpacing) {
-    //   canvas.drawLine(
-    //     Offset(0, y),
-    //     Offset(size.width, y),
-    //     gridPaint,
-    //   );
-    // }
-    // 绘制 backgroundLine 为绿色原点
-
-    // 绘制垂直网格线（改为格点）
-    for (double x = (backgroundLine.dx) % gridSpacing + globalOffset.dx;
-        x < size.width;
-        x += gridSpacing) {
-      for (double y = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
-          y < size.height;
-          y += gridSpacing) {
-        canvas.drawCircle(
-          Offset(x, y),
-          3 * scale, // 格点半径
-          gridPaint,
-        );
-      }
-      for (double y = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
-          y >= 0;
-          y -= gridSpacing) {
-        canvas.drawCircle(
-          Offset(x, y),
-          3 * scale, // 格点半径
-          gridPaint,
-        );
-      }
+    double x1 = (backgroundLine.dx) % gridSpacing + globalOffset.dx;
+    double y1 = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
+    while (x1 > 0) {
+      x1 -= gridSpacing;
     }
-
-    for (double x = (backgroundLine.dx) % gridSpacing + globalOffset.dx;
-        x >= 0;
-        x -= gridSpacing) {
-      for (double y = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
-          y < size.height;
-          y += gridSpacing) {
-        canvas.drawCircle(
-          Offset(x, y),
-          3 * scale, // 格点半径
-          gridPaint,
-        );
-      }
-      for (double y = (backgroundLine.dy) % gridSpacing + globalOffset.dy;
-          y >= 0;
-          y -= gridSpacing) {
+    while (y1 > 0) {
+      y1 -= gridSpacing;
+    }
+    for (double x = x1; x < size.width; x += gridSpacing) {
+      for (double y = y1; y < size.height; y += gridSpacing) {
         canvas.drawCircle(
           Offset(x, y),
           3 * scale, // 格点半径

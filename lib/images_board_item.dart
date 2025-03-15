@@ -92,10 +92,11 @@ class BoardPoint {
   double minScale = 0.25;
   double maxScale = 4;
   ImageItem? parent;
-
+  BoardLine? parentLine;
+  int isSelected = 0;
   int code;
   BoardPoint(this.position, this.code);
-  int isSelected = 0;
+
   void click() {
     isSelected++;
     var mng = ImagesBoardManager();
@@ -104,7 +105,7 @@ class BoardPoint {
     mng.currentSelectedImgItem = parent;
     if (isSelected == 1) {
       color = Colors.blue;
-      
+
       if (lastImg != null && parent != lastImg) {
         if (lastImg.canBeLinked()) {
           print('连接');
@@ -112,25 +113,20 @@ class BoardPoint {
               DateTime.now().millisecondsSinceEpoch);
           ImagesBoardManager().currentSelectedImgItem = null;
           ImagesBoardManager().addLine(line);
-        }
-        else{
+        } else {
           print('无法连接');
           lastImg.leftPoint.unclick();
           lastImg.rightPoint.unclick();
         }
-      }
-      else if(lastImg != null && parent == lastImg){
-        if(this == lastImg.leftPoint){
+      } else if (lastImg != null && parent == lastImg) {
+        if (this == lastImg.leftPoint) {
           parent!.rightPoint.unclick();
           print('取消点击 右');
-        }
-        else{
-          parent!.leftPoint.unclick(); 
+        } else {
+          parent!.leftPoint.unclick();
           print('取消点击 左');
         }
-        
-      }
-      else{
+      } else {
         print('设置为parent');
         ImagesBoardManager().currentSelectedImgItem = parent;
       }
@@ -174,6 +170,24 @@ class BoardPoint {
     scale += s;
     scale = min(max(scale, minScale), maxScale);
   }
+
+  bool checkOnLine(Offset globalPoint) {
+    if (parentLine == null) return false;
+    bool result = inArea(globalPoint);
+    if (!result) return false;
+    isSelected++;
+    print('check on line');
+    if (isSelected == 1) {
+      color = Colors.blue;
+    } else if (isSelected == 2) {
+      parentLine!.removePoint(code);
+    }
+    else{
+      isSelected = 0;
+      color = const Color.fromARGB(255, 90, 90, 90);
+    }
+    return result;
+  }
 }
 
 class BoardLine {
@@ -185,8 +199,15 @@ class BoardLine {
   double minScale = 0.25;
   double maxScale = 4;
   double width = 4;
+  int isSelected = 0;
   Path path = Path();
   BoardLine(this.points, this.code);
+
+  void updatePointsPosition(){
+    for (int i = 1; i < points.length - 1; i++){
+      
+    }
+  }
   void addPoint() {
     double distance = 0;
     int index = 0;
@@ -196,17 +217,29 @@ class BoardLine {
         index = i;
       }
     }
+    var boardScale = ImagesBoardManager().scale;
+    // 计算间隔最大的两个点之间的中点
+    Offset midPoint = (points[index].position + points[index - 1].position) / 2;
     points.insert(
         index,
         BoardPoint(
-            points[index].position, DateTime.now().millisecondsSinceEpoch));
+            midPoint, DateTime.now().millisecondsSinceEpoch)
+          ..parentLine = this
+          ..scale = boardScale);
   }
 
-  void removePoint() {}
-
-  bool inArea(Offset globalPoint) {
+  void removePoint(int code) {
     for (int i = 0; i < points.length; i++) {
-      if (points[i].inArea(globalPoint)) {
+      if (points[i].code == code) {
+        points.removeAt(i);
+        return;
+      }
+    }
+  }
+
+  bool checkPointsInArea(Offset globalPoint) {
+    for (int i = 1; i < points.length - 1; i++) {
+      if (points[i].checkOnLine(globalPoint)) {
         selectedPoint = i;
         return true;
       }
@@ -226,21 +259,30 @@ class BoardLine {
     }
   }
 
-  bool isPointOnPath(
-    Offset position) {
-    // var localPosition = ImagesBoardManager().global2Local(position);
-    double tolerance = width * scale * ImagesBoardManager().scale*2;
+  bool isPointOnPath(Offset position, {double s = 0}) {
+    if (checkPointsInArea(position)) return true;
+    double tolerance = width * scale * ImagesBoardManager().scale * 2;
     final metrics = path.computeMetrics();
+    var localPosition = position - ImagesBoardManager().boardOffset;
     for (final metric in metrics) {
       // 计算点击位置到当前路径段的最短距离
-      final distance = _getMinDistanceToPathSegment(metric, position);
+      final distance = _getMinDistanceToPathSegment(metric, localPosition);
       if (distance <= tolerance) {
         // print('点击了 线条');
-        color = Colors.blue;
+        isSelected++;
+        if (isSelected == 1) {
+          color = Colors.blue;
+        } else if (isSelected == 2) {
+          addPoint();
+        } else {
+          isSelected = 0;
+          color = const Color.fromARGB(255, 81, 81, 81);
+        }
         return true;
       }
     }
     color = const Color.fromARGB(255, 81, 81, 81);
+    isSelected = 0;
     return false;
   }
 
