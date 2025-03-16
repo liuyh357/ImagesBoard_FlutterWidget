@@ -53,7 +53,6 @@ class BoardItem {
 
   void unclick() {
     isSelected = 0;
-    // ImagesBoardManager().updateView();
   }
 
   bool checkInArea(Offset globalPoint, bool isClicked) {
@@ -133,7 +132,7 @@ class BoardPoint {
     } else if (isSelected == 2) {
       color = Colors.red;
       ImagesBoardManager().currentSelectedImgItem = parent;
-      print('选中');
+      print('选中, 设置为parent');
     } else {
       unclick();
     }
@@ -157,6 +156,7 @@ class BoardPoint {
     if (result) {
       click();
     } else {
+      //不unclick防止无法连接（selected=0，无法连接）
       // unclick();
     }
     return result;
@@ -263,6 +263,10 @@ class BoardLine {
     return false;
   }
 
+  bool inTail(Offset globalPoint) {
+    return points.first.inArea(globalPoint) || points.last.inArea(globalPoint);
+  }
+
   void click() {
     if (selectedPoint != -1) {
       points[selectedPoint].click();
@@ -276,6 +280,7 @@ class BoardLine {
   }
 
   bool isPointOnPath(Offset position, bool isClicked) {
+    if(inTail(position))return false;
     if (checkPointsInArea(position)) return true;
     double tolerance = width * scale * ImagesBoardManager().scale * 2;
     final metrics = path.computeMetrics();

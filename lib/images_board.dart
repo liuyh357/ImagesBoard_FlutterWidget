@@ -201,6 +201,7 @@ class _ImagesBoardState extends State<ImagesBoard> {
       },
       onPointerDown: (event) {
         // print('鼠标按下事件');
+        // if (event.buttons != 1)return;
         ImagesBoardManager().oldScale = ImagesBoardManager().scale;
         bool isClicked = false;
         for (var item in ImagesBoardManager().imageItems.reversed) {
