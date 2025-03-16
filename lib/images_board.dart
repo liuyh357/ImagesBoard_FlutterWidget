@@ -39,7 +39,7 @@ class ImagesBoardManager with ChangeNotifier {
 
   int clickFresh = 0;
 
-  int currentItemCode = 0;
+  ImageItem? currentItem;
 
   bool enableDragging = true;
 
@@ -50,6 +50,8 @@ class ImagesBoardManager with ChangeNotifier {
   ImageItem? currentSelectedImgItem;
 
   ImageItem? preSelectedImgItem;
+
+  BoardPoint? currentSelectedPoint;
 
   Offset global2Local(Offset point) {
     return point - boardOffset - globalOffset;
@@ -94,8 +96,8 @@ class ImagesBoardManager with ChangeNotifier {
     for (var item in imageItems) {
       item.updatePosition();
     }
-    for(var line in lines){
-      line.updatePointsPosition(); 
+    for (var line in lines) {
+      line.updatePointsPosition();
     }
     notifyListeners();
   }
@@ -171,15 +173,12 @@ class _ImagesBoardState extends State<ImagesBoard> {
             ImagesBoardManager()
                 .addScale(-event.scrollDelta.dy * 0.002, event.localPosition);
           } else {
-            //todo：改成图片的坐标在这里更新
-            for (var item in ImagesBoardManager().imageItems) {
-              if (ImagesBoardManager().currentItemCode == item.code) {
-                item.addScale(-event.scrollDelta.dy * 0.002);
-
-                ImagesBoardManager().clickFresh++;
-                ImagesBoardManager().updateView();
-              }
-            }
+            ImagesBoardManager()
+                .currentItem
+                ?.addScale(-event.scrollDelta.dy * 0.002);
+                
+            ImagesBoardManager().clickFresh++;
+            ImagesBoardManager().updateView();
           }
         }
       },
@@ -191,15 +190,12 @@ class _ImagesBoardState extends State<ImagesBoard> {
           // 检测到鼠标左键按下
           if (ImagesBoardManager().enableDragging) {
             ImagesBoardManager().globalOffset += event.delta;
+            
           } else {
-            for (var item in ImagesBoardManager().imageItems) {
-              if (ImagesBoardManager().currentItemCode == item.code) {
-                item.addOffset(event.delta);
-                // print('item localPosition: ${item.localPosition}');
-                ImagesBoardManager().clickFresh++;
-              }
-            }
+            ImagesBoardManager().currentItem?.addOffset(event.delta);
+            ImagesBoardManager().currentSelectedPoint?.addOffset(event.delta);
           }
+          ImagesBoardManager().clickFresh++;
           ImagesBoardManager().updateView();
         }
       },
@@ -208,11 +204,8 @@ class _ImagesBoardState extends State<ImagesBoard> {
         ImagesBoardManager().oldScale = ImagesBoardManager().scale;
         bool isClicked = false;
         for (var item in ImagesBoardManager().imageItems.reversed) {
-          //todo: 添加线的点击事件
-
           if (item.checkInArea(event.position, isClicked)) {
-            // print('点击了图片: ${item.imgPath}');
-            ImagesBoardManager().currentItemCode = item.code;
+            ImagesBoardManager().currentItem = item;
             if (!item.enableBoardDragging()) {
               ImagesBoardManager().enableDragging = false;
             } else {
@@ -220,15 +213,18 @@ class _ImagesBoardState extends State<ImagesBoard> {
             }
             isClicked = true;
           }
-
           if (item.checkPointsOnTap(event.position)) {
             // print('点击了 点');
           }
+      
+        }
+        if (!isClicked) {
+          ImagesBoardManager().currentItem = null;
         }
 
-        for (var line in ImagesBoardManager().lines) {
-          if (line.isPointOnPath(event.position)) {
-            // print('点击了 线');
+        for (var line in ImagesBoardManager().lines.reversed) {
+          if (line.isPointOnPath(event.position, isClicked)) {
+            isClicked = true;
           }
         }
 

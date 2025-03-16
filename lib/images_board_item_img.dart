@@ -92,6 +92,7 @@ class ImageItem extends BoardItem {
   @override
   void unclick() {
     super.unclick();
+    // ImagesBoardManager().currentItem = null;
     sideColor = Colors.white;
   }
 
@@ -103,6 +104,7 @@ class ImageItem extends BoardItem {
     }
     bool result = inArea(globalPoint);
     if (result) {
+      // ImagesBoardManager().currentItem = this;
       click();
     } else {
       unclick();

@@ -171,18 +171,26 @@ class BoardPoint {
     scale = min(max(scale, minScale), maxScale);
   }
 
-  bool checkOnLine(Offset globalPoint) {
+  bool checkOnLine(Offset globalPoint, {Offset delta = Offset.zero}) {
     if (parentLine == null) return false;
     bool result = inArea(globalPoint);
-    if (!result) return false;
+    if (!result) {
+      unclick();
+      return false;
+    }
+    ImagesBoardManager().currentSelectedPoint = this;
     isSelected++;
-    print('check on line');
+    // print('check on line');
     if (isSelected == 1) {
+      ImagesBoardManager().enableDragging = false;
+      print('ban drag');
+      position += delta;
       color = Colors.blue;
     } else if (isSelected == 2) {
+      color = Colors.red;
       parentLine!.removePoint(code);
-    }
-    else{
+    } else if (isSelected == 3) {
+    } else {
       isSelected = 0;
       color = const Color.fromARGB(255, 90, 90, 90);
     }
@@ -203,17 +211,19 @@ class BoardLine {
   Path path = Path();
   BoardLine(this.points, this.code);
 
-  void updatePointsPosition(){
+  void updatePointsPosition() {
     var mng = ImagesBoardManager();
     var globalOffset = mng.globalOffset;
     var mousePosition = mng.mousePosition - globalOffset;
-    var deltaScale = mng.scale/mng.oldScale;
-    
-    for (int i = 1; i < points.length - 1; i++){
+    var deltaScale = mng.scale / mng.oldScale;
+
+    for (int i = 1; i < points.length - 1; i++) {
       var point = points[i];
-      point.position = (point.position - mousePosition) * deltaScale + mousePosition;
+      point.position =
+          (point.position - mousePosition) * deltaScale + mousePosition;
     }
   }
+
   void addPoint() {
     double distance = 0;
     int index = 0;
@@ -228,8 +238,7 @@ class BoardLine {
     Offset midPoint = (points[index].position + points[index - 1].position) / 2;
     points.insert(
         index,
-        BoardPoint(
-            midPoint, DateTime.now().millisecondsSinceEpoch)
+        BoardPoint(midPoint, DateTime.now().millisecondsSinceEpoch)
           ..parentLine = this
           ..scale = boardScale);
   }
@@ -243,13 +252,14 @@ class BoardLine {
     }
   }
 
-  bool checkPointsInArea(Offset globalPoint) {
+  bool checkPointsInArea(Offset globalPoint, {Offset delta = Offset.zero}) {
     for (int i = 1; i < points.length - 1; i++) {
-      if (points[i].checkOnLine(globalPoint)) {
+      if (points[i].checkOnLine(globalPoint, delta: delta)) {
         selectedPoint = i;
         return true;
       }
     }
+    ImagesBoardManager().currentSelectedPoint = null;
     return false;
   }
 
@@ -265,7 +275,7 @@ class BoardLine {
     }
   }
 
-  bool isPointOnPath(Offset position, {double s = 0}) {
+  bool isPointOnPath(Offset position, bool isClicked) {
     if (checkPointsInArea(position)) return true;
     double tolerance = width * scale * ImagesBoardManager().scale * 2;
     final metrics = path.computeMetrics();
