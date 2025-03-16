@@ -259,7 +259,7 @@ class BoardLine {
         return true;
       }
     }
-    ImagesBoardManager().currentSelectedPoint = null;
+    
     return false;
   }
 

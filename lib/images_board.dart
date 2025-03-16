@@ -229,6 +229,7 @@ class _ImagesBoardState extends State<ImagesBoard> {
         }
 
         if (!isClicked) {
+          ImagesBoardManager().currentSelectedPoint = null;
           ImagesBoardManager().enableDragging = true;
         }
         ImagesBoardManager().clickFresh++;
