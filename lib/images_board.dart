@@ -53,6 +53,8 @@ class ImagesBoardManager with ChangeNotifier {
 
   BoardPoint? currentSelectedPoint;
 
+  int lastItemCode = 0;
+
   Offset global2Local(Offset point) {
     return point - boardOffset - globalOffset;
   }
@@ -73,13 +75,19 @@ class ImagesBoardManager with ChangeNotifier {
     notifyListeners();
   }
 
-  void addLine(BoardLine line) {
-    print('add line');
+  void addLine(BoardPoint start, BoardPoint end) {
+    // print('add line');
+    for(var l in lines) {
+      if(l.points.first == start || l.points.last == end) {
+        return;
+      }
+    }
+    var line = BoardLine([start, end], DateTime.now().millisecondsSinceEpoch);
     lines.add(line);
     clickFresh++;
     for (var point in line.points) {
       point.unclick();
-      point.unclick();
+      // point.unclick();
     }
     notifyListeners();
   }

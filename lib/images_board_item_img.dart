@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:simple_canvas/images_board.dart';
 import 'package:simple_canvas/images_board_item.dart';
+import 'package:simple_canvas/images_board_item_text.dart';
 
 class ImageItem extends BoardItem {
   String imgPath;
@@ -11,6 +12,7 @@ class ImageItem extends BoardItem {
   ui.Color sideColor = Colors.white;
   late BoardPoint leftPoint;
   late BoardPoint rightPoint;
+  List<BoardText> labels = [];
 
   ImageItem(
       {required Offset globalPosition,
@@ -112,6 +114,16 @@ class ImageItem extends BoardItem {
     return result;
   }
 
+  void checkDelete(Offset globalPoint) {
+    var lastItemCode = ImagesBoardManager().lastItemCode;
+    if (lastItemCode != code && inArea(globalPoint)) {
+      lastItemCode = code;
+      unclick();
+      click();
+      // ImagesBoardManager().imageItems.remove(this);
+    }
+  }
+
   bool enableBoardDragging() {
     return isSelected == 1;
   }
@@ -134,14 +146,14 @@ class ImageItem extends BoardItem {
     updatePointsPosition();
   }
 
-  void updatePointsPosition(){
+  void updatePointsPosition() {
     var manager = ImagesBoardManager();
     double totalScale = scale * manager.scale;
     double sideWidth = 0.03 * (width > height ? width : height) * totalScale;
-    leftPoint.position = localPosition +
-        Offset(-width * totalScale / 2 - sideWidth * 1.5, 0);
-    rightPoint.position = localPosition +
-        Offset(width * totalScale / 2 + sideWidth * 1.5, 0);
+    leftPoint.position =
+        localPosition + Offset(-width * totalScale / 2 - sideWidth * 1.5, 0);
+    rightPoint.position =
+        localPosition + Offset(width * totalScale / 2 + sideWidth * 1.5, 0);
   }
 
   double getLeft(double totalScale) =>
@@ -171,5 +183,36 @@ class ImageItem extends BoardItem {
   BoardPoint getLinkedPoint() {
     //todo: 后续可能要加上完整的四个点判断逻辑
     return leftPoint.isSelected == 2 ? leftPoint : rightPoint;
+  }
+
+  void addLabel(String text, Color bgColor, Color textColor) {
+    if(labels == []) {
+      var addButton = BoardText(
+        Offset(localPosition.dx, localPosition.dy),
+        scale*ImagesBoardManager().scale,
+        width,
+        height,
+        DateTime.now().millisecondsSinceEpoch,
+        '添加标签',
+        bgColor,
+        textColor,
+        leftMDCodePoint: Icons.add.codePoint);
+      labels.add(addButton);
+    }
+    var label = BoardText(
+        Offset(localPosition.dx, localPosition.dy),
+        scale*ImagesBoardManager().scale,
+        width,
+        height,
+        DateTime.now().millisecondsSinceEpoch,
+        text,
+        bgColor,
+        textColor);
+    
+    labels.insert(0, label);
+  }
+
+  void deleteLabel(String text){
+    labels.removeWhere((element) => element.text == text);
   }
 }

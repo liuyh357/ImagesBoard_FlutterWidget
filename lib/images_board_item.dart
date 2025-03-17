@@ -108,10 +108,10 @@ class BoardPoint {
       if (lastImg != null && parent != lastImg) {
         if (lastImg.canBeLinked()) {
           print('连接');
-          var line = BoardLine([this, lastImg.getLinkedPoint()],
-              DateTime.now().millisecondsSinceEpoch);
+          // var line = BoardLine([this, lastImg.getLinkedPoint()],
+          //     DateTime.now().millisecondsSinceEpoch);
           ImagesBoardManager().currentSelectedImgItem = null;
-          ImagesBoardManager().addLine(line);
+          ImagesBoardManager().addLine(this, lastImg.getLinkedPoint());
         } else {
           print('无法连接');
           lastImg.leftPoint.unclick();
@@ -259,7 +259,7 @@ class BoardLine {
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -279,9 +279,12 @@ class BoardLine {
     }
   }
 
-  bool isPointOnPath(Offset position, bool isClicked) {
-    if(inTail(position))return false;
-    if (checkPointsInArea(position)) return true;
+  bool isPointOnPath(Offset position, bool isClicked,
+      {bool rightClick = false}) {
+    if (!rightClick) {
+      if (inTail(position)) return false;
+      if (checkPointsInArea(position)) return true;
+    }
     double tolerance = width * scale * ImagesBoardManager().scale * 2;
     final metrics = path.computeMetrics();
     var localPosition = position - ImagesBoardManager().boardOffset;
@@ -329,5 +332,15 @@ class BoardLine {
     }
     // print('最小距离: $minDistance');
     return minDistance;
+  }
+
+  void checkDelete(Offset globalPoint) {
+    var lastItemCode = ImagesBoardManager().lastItemCode;
+    if (lastItemCode != code && isPointOnPath(globalPoint,false, rightClick: true)) {
+      lastItemCode = code;
+      unclick();
+      click();
+      // ImagesBoardManager().imageItems.remove(this);
+    }
   }
 }
