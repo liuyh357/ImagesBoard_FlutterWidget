@@ -144,8 +144,6 @@ class BoardPoint {
   }
 
   bool inArea(Offset globalPoint) {
-    // 将全局坐标转换为局部坐标
-
     var localOffset = ImagesBoardManager().global2Local(globalPoint);
     var totalScale = scale * ImagesBoardManager().scale;
     return (localOffset - position).distance < size * totalScale;

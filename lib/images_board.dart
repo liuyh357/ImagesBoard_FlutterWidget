@@ -65,6 +65,7 @@ class ImagesBoardManager with ChangeNotifier {
   }
 
   void updateView() {
+    clickFresh++;
     notifyListeners();
   }
 
@@ -77,8 +78,8 @@ class ImagesBoardManager with ChangeNotifier {
 
   void addLine(BoardPoint start, BoardPoint end) {
     // print('add line');
-    for(var l in lines) {
-      if(l.points.first == start || l.points.last == end) {
+    for (var l in lines) {
+      if (l.points.first == start && l.points.last == end) {
         return;
       }
     }
@@ -184,7 +185,7 @@ class _ImagesBoardState extends State<ImagesBoard> {
             ImagesBoardManager()
                 .currentItem
                 ?.addScale(-event.scrollDelta.dy * 0.002);
-                
+
             ImagesBoardManager().clickFresh++;
             ImagesBoardManager().updateView();
           }
@@ -198,7 +199,6 @@ class _ImagesBoardState extends State<ImagesBoard> {
           // 检测到鼠标左键按下
           if (ImagesBoardManager().enableDragging) {
             ImagesBoardManager().globalOffset += event.delta;
-            
           } else {
             ImagesBoardManager().currentItem?.addOffset(event.delta);
             ImagesBoardManager().currentSelectedPoint?.addOffset(event.delta);
@@ -225,7 +225,9 @@ class _ImagesBoardState extends State<ImagesBoard> {
           if (item.checkPointsOnTap(event.position)) {
             // print('点击了 点');
           }
-      
+          if (item.checkLabelsClick(event.position, context)) {
+            print('点击了 标签');
+          }
         }
         if (!isClicked) {
           ImagesBoardManager().currentItem = null;
@@ -366,6 +368,100 @@ class ImagesBoardPainter extends CustomPainter {
     }
   }
 
+  void drawLabels(
+      ImageItem item, Canvas canvas, Offset globalOffset, double totalScale) {
+    var maxWidth = item.width * totalScale;
+    var height = maxWidth * 0.1;
+    var maxTextWidth = maxWidth * 0.9;
+    // int lineIndex = 0;
+    double lineOffset = 0;
+    var fontSize = height * 0.6;
+    double yOffset = height * 0.5; // 用于记录当前行的垂直偏移
+    double standardLong =
+        (item.width > item.height ? item.width : item.height) * totalScale;
+    // 计算图片左下角的位置
+    double left =
+        item.localPosition.dx - item.width * totalScale / 2 + globalOffset.dx;
+    double bottom =
+        item.localPosition.dy + item.height * totalScale / 2 + globalOffset.dy;
+
+    for (var label in item.labels) {
+      var textPainter = TextPainter(
+        text: TextSpan(
+          text: label.text,
+          style: TextStyle(
+            color: label.textColor,
+            fontSize: fontSize,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+        maxLines: 2,
+      )..layout(
+          minWidth: 0,
+          maxWidth: maxTextWidth,
+        );
+
+      double textHeight = 0;
+      double textWidth = 0;
+      for (var line in textPainter.computeLineMetrics()) {
+        textHeight += line.height;
+        textWidth = max(textWidth, line.width);
+      }
+
+      // 计算矩形的宽度和高度
+      double rectWidth = textWidth + standardLong * 0.05; // 增加一些内边距
+      double rectHeight = textHeight + standardLong * 0.05;
+
+      // 检查是否需要换行
+      if (lineOffset + rectWidth > maxWidth) {
+        // lineIndex++;
+        lineOffset = 0;
+        yOffset += rectHeight + standardLong * 0.05; // 增加行间距
+      }
+
+      // 计算矩形的位置，从左下角开始
+      double rectX = left + lineOffset;
+      double rectY = bottom + yOffset;
+
+      double borderRadius = standardLong * 0.01;
+
+      // 绘制阴影
+      var shadowPaint = Paint()
+        ..color = Colors.black.withOpacity(0.3)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 10);
+      var shadowRect = Rect.fromLTWH(rectX + standardLong * 0.01,
+          rectY + standardLong * 0.01, rectWidth, rectHeight);
+      var shadowRRect =
+          RRect.fromRectAndRadius(shadowRect, Radius.circular(10));
+      canvas.drawRRect(shadowRRect, shadowPaint);
+
+      // 绘制圆角矩形
+      var rectPaint = Paint()..color = label.bgColor;
+      var rect = Rect.fromLTWH(rectX, rectY, rectWidth, rectHeight);
+      var rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
+      canvas.drawRRect(rrect, rectPaint);
+
+      // 计算文字的位置，使其居中
+      double textX = rectX + (rectWidth - textWidth) / 2;
+      double textY = rectY + (rectHeight - textHeight) / 2;
+
+      // 绘制文字
+      textPainter.paint(canvas, Offset(textX, textY));
+
+      // 更新 lineOffset
+      lineOffset += rectWidth + item.width * totalScale * 0.02; // 增加间距
+
+      // 设置当前label的width和height为矩形的长和宽
+      label.width = rectWidth / totalScale;
+      label.height = rectHeight / totalScale;
+
+      // 设置当前label的localPosition为矩形中心
+      label.localPosition = Offset(rectX + rectWidth / 2 - globalOffset.dx,
+          rectY + rectHeight / 2 - globalOffset.dy);
+      label.scale = item.scale;
+    }
+  }
+
   void drawPoint(
       BoardPoint point, Canvas canvas, Offset globalOffset, double totalScale) {
     // 绘制阴影
@@ -489,6 +585,7 @@ class ImagesBoardPainter extends CustomPainter {
       if (item.image != null) {
         drawImg(item, canvas, mousePosition, globalOffset, scale * item.scale,
             scale / oldScale);
+        drawLabels(item, canvas, globalOffset, scale * item.scale);
       }
     }
   }

@@ -13,6 +13,8 @@ class ImageItem extends BoardItem {
   late BoardPoint leftPoint;
   late BoardPoint rightPoint;
   List<BoardText> labels = [];
+  List<BoardText> toDeletLabels = [];
+  List<BoardText> toAddLabels = [];
 
   ImageItem(
       {required Offset globalPosition,
@@ -43,6 +45,21 @@ class ImageItem extends BoardItem {
         DateTime.now().millisecondsSinceEpoch);
     rightPoint.scale = scale;
     rightPoint.parent = this;
+
+    if (labels.isEmpty) {
+      var addButton = BoardText(
+          Offset(localPosition.dx, localPosition.dy),
+          scale * ImagesBoardManager().scale,
+          width,
+          height,
+          DateTime.now().millisecondsSinceEpoch,
+          '添加标签',
+          Colors.white,
+          Colors.black,
+          this,
+          leftMDCodePoint: Icons.add.codePoint);
+      labels.add(addButton);
+    }
   }
 
   factory ImageItem.fromJson(String jsonStr) {
@@ -185,34 +202,40 @@ class ImageItem extends BoardItem {
     return leftPoint.isSelected == 2 ? leftPoint : rightPoint;
   }
 
-  void addLabel(String text, Color bgColor, Color textColor) {
-    if(labels == []) {
-      var addButton = BoardText(
-        Offset(localPosition.dx, localPosition.dy),
-        scale*ImagesBoardManager().scale,
-        width,
-        height,
-        DateTime.now().millisecondsSinceEpoch,
-        '添加标签',
-        bgColor,
-        textColor,
-        leftMDCodePoint: Icons.add.codePoint);
-      labels.add(addButton);
+  bool checkLabelsClick(Offset globalPoint, BuildContext context) {
+    bool result = false;
+    for (int i = 0; i < labels.length; i++) {
+        var element = labels[i];
+        if (element.checkInArea(globalPoint, false, context: context)) {
+            result = true;
+        }
     }
+    labels.insertAll(0, toAddLabels);
+    toAddLabels.clear();
+    labels.removeWhere((element) => toDeletLabels.contains(element));
+    toDeletLabels.clear();
+    return result;
+}
+
+  void addLabel(String text, Color bgColor, Color textColor) {
     var label = BoardText(
         Offset(localPosition.dx, localPosition.dy),
-        scale*ImagesBoardManager().scale,
+        scale * ImagesBoardManager().scale,
         width,
         height,
         DateTime.now().millisecondsSinceEpoch,
         text,
         bgColor,
-        textColor);
-    
-    labels.insert(0, label);
+        textColor,
+        this);
+
+    // toAddLabels.add(label);
+    labels.insert(labels.length-1, label);
   }
 
-  void deleteLabel(String text){
-    labels.removeWhere((element) => element.text == text);
+  void deleteLabel(String text) {
+    if (text != '添加标签') {
+      labels.removeWhere((element) => element.text == text);
+    }
   }
 }

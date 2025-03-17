@@ -3,10 +3,8 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class FloatingComponentController {
   // 静态私有实例变量
-  static final FloatingComponentController _instance = FloatingComponentController._internal();
-
-  FloatingComponent? _floatingComponent;
-  OverlayEntry? _entry;
+  static final FloatingComponentController _instance =
+      FloatingComponentController._internal();
 
   // 私有构造函数
   FloatingComponentController._internal();
@@ -14,44 +12,29 @@ class FloatingComponentController {
   // 静态访问方法
   static FloatingComponentController get instance => _instance;
 
-  void showOverlay(OverlayState overlay, double left, double top,
-      void Function(String) onTextChanged, void Function(Color) onBgColorChanged, void Function(Color) onTextColorChanged) {
-    _floatingComponent = FloatingComponent(
-      left: left,
-      top: top,
-      onTextChanged: onTextChanged,
-      onBgColorChanged: onBgColorChanged, 
-      onTextColorChanged: onTextColorChanged,
-    );
-    _entry = OverlayEntry(
-      builder: (context) {
-        return _floatingComponent!;
+  Future<void> showAddLabelDialog(
+    BuildContext context,
+    void Function(String, Color, Color) onSubmitted,
+  ) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return FloatingComponent(
+          onSubmitted: onSubmitted,
+        );
       },
     );
-    overlay.insert(_entry!);
   }
 
-  void hideOverlay() {
-    _entry?.remove();
-    _entry = null;
-    _floatingComponent = null;
-  }
+  // 移除了 hideOverlay 方法，因为对话框会自动关闭
 }
 
 class FloatingComponent extends StatefulWidget {
-  final double left;
-  final double top;
-  final void Function(String) onTextChanged;
-  final void Function(Color) onBgColorChanged;
-  final void Function(Color) onTextColorChanged;
+  final void Function(String, Color, Color) onSubmitted;
 
   const FloatingComponent({
     super.key,
-    required this.left,
-    required this.top,
-    required this.onTextChanged,
-    required this.onBgColorChanged,
-    required this.onTextColorChanged,
+    required this.onSubmitted,
   });
 
   @override
@@ -59,34 +42,39 @@ class FloatingComponent extends StatefulWidget {
 }
 
 class FloatingComponentState extends State<FloatingComponent> {
-  double left;
-  double top;
   Color textColor = Colors.black;
-  Color bgColor = const Color.fromARGB(255, 235, 235, 235);
+  Color bgColor = const Color.fromARGB(255, 255, 255, 255);
   TextEditingController textEditingController = TextEditingController();
-  FloatingComponentState()
-      : left = 0.0,
-        top = 0.0;
+  // 创建 FocusNode
+  FocusNode focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    left = widget.left;
-    top = widget.top;
+    // 在组件初始化完成后，使用 Future.microtask 确保在 build 方法执行后再请求焦点
+    Future.microtask(() {
+      FocusScope.of(context).requestFocus(focusNode);
+    });
+  }
+
+  @override
+  void dispose() {
+    // 释放 FocusNode
+    focusNode.dispose();
+    textEditingController.dispose();
+    super.dispose();
   }
 
   void _onBGColorChanged(Color color) {
     setState(() {
       bgColor = color;
     });
-    widget.onBgColorChanged(color);
   }
 
   void _onTextColorChanged(Color color) {
     setState(() {
       textColor = color;
     });
-    widget.onTextColorChanged(color);
   }
 
   // 弹出颜色选择器的函数
@@ -107,7 +95,7 @@ class FloatingComponentState extends State<FloatingComponent> {
               child: const Text('取消'),
               onPressed: () {
                 Navigator.of(context).pop();
-              }, 
+              },
             ),
             ElevatedButton(
               child: const Text('确定'),
@@ -123,24 +111,28 @@ class FloatingComponentState extends State<FloatingComponent> {
 
   @override
   Widget build(context) {
-    return Positioned(
-      left: left,
-      top: top,
-      child: Column(
+    return AlertDialog(
+      title: const Text('输入标签'),
+      content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: textEditingController,
-                onChanged: (value) {
-                  widget.onTextChanged(value);
-                },
-                onSubmitted: (value) {
-                  widget.onTextChanged(value);
-                  Navigator.of(context).pop();
-                },
+              SizedBox(
+                width: 100,
+                height: 50,
+                child: TextField(
+                  // 将 FocusNode 关联到 TextField
+                  focusNode: focusNode,
+                  controller: textEditingController,
+                  onChanged: (value) {},
+                  onSubmitted: (value) {
+                    widget.onSubmitted(textEditingController.text, bgColor, textColor);
+                    textEditingController.clear();
+                    Navigator.of(context).pop();
+                  },
+                ),
               ),
               IconButton(
                 onPressed: () {
@@ -152,13 +144,12 @@ class FloatingComponentState extends State<FloatingComponent> {
                   shadows: [
                     Shadow(
                       blurRadius: 10.0,
-                      color: Colors.black,
-                      offset: Offset(0.0, 0.0), 
+                      color: const Color.fromARGB(255, 84, 84, 84),
+                      offset: Offset(0.0, 0.0),
                     )
                   ],
                 ),
                 tooltip: '文字颜色',
-                
               ),
               IconButton(
                 onPressed: () {
@@ -170,30 +161,35 @@ class FloatingComponentState extends State<FloatingComponent> {
                   shadows: [
                     Shadow(
                       blurRadius: 10.0,
-                      color: Colors.black,
+                      color: const Color.fromARGB(255, 100, 100, 100),
                       offset: Offset(0.0, 0.0),
-                    ) 
-                  ]
+                    )
+                  ],
                 ),
                 tooltip: '背景颜色',
               ),
             ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              widget.onTextChanged(textEditingController.text);
-              Navigator.of(context).pop();
-            },
-            child: const Text('确定'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('取消'),
-          )
         ],
       ),
+      actions: [
+        ElevatedButton(
+          onPressed: () {
+            if (textEditingController.text.isNotEmpty) {
+              widget.onSubmitted(textEditingController.text, bgColor, textColor);
+            }
+            Navigator.of(context).pop();
+          },
+          child: const Text('确定'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            textEditingController.clear();
+            Navigator.of(context).pop();
+          },
+          child: const Text('取消'),
+        ),
+      ],
     );
   }
 }
