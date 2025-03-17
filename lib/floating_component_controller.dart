@@ -1,3 +1,7 @@
+// floating_component_controller.dart
+// 描述: 定义了浮动组件控制器和对话框 FloatingComponent，用于添加标签时弹出输入框并选择颜色。
+// 关键功能: 提供用户输入标签内容的界面和颜色选择功能。
+
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
@@ -128,7 +132,8 @@ class FloatingComponentState extends State<FloatingComponent> {
                   controller: textEditingController,
                   onChanged: (value) {},
                   onSubmitted: (value) {
-                    widget.onSubmitted(textEditingController.text, bgColor, textColor);
+                    widget.onSubmitted(
+                        textEditingController.text, bgColor, textColor);
                     textEditingController.clear();
                     Navigator.of(context).pop();
                   },
@@ -176,7 +181,8 @@ class FloatingComponentState extends State<FloatingComponent> {
         ElevatedButton(
           onPressed: () {
             if (textEditingController.text.isNotEmpty) {
-              widget.onSubmitted(textEditingController.text, bgColor, textColor);
+              widget.onSubmitted(
+                  textEditingController.text, bgColor, textColor);
             }
             Navigator.of(context).pop();
           },

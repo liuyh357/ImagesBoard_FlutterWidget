@@ -1,3 +1,11 @@
+// 描述: 定义了核心的白板组件 ImagesBoard 和其管理类 ImagesBoardManager，
+
+// 用于管理白板上的图像、线条、区域等元素。
+//包括鼠标交互（拖动、缩放、选择）、绘制逻辑（通过 ImagesBoardPainter 实现网格、图像、线条等的渲染）
+//和区域创建功能。
+
+// 关键功能: 白板的状态管理（如缩放、偏移）、图像和线条的添加与绘制、用户交互处理。
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';

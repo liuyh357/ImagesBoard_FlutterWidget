@@ -1,10 +1,13 @@
+// draggable_image.dart
+// 描述: 定义了 DraggableImage 组件，允许用户从底部列表中拖动图像到白板上，包含拖动时的视觉反馈（通过 DraggableImagePainter 实现）。
+// 关键功能: 图像的拖动交互和添加到白板的功能。
+
 import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:simple_canvas/images_board.dart';
 import 'package:simple_canvas/images_board_item_img.dart';
-
 
 class DraggableImage extends StatefulWidget {
   const DraggableImage(
@@ -69,7 +72,7 @@ class _DraggableImageState extends State<DraggableImage> {
                   var imageItem = ImageItem(
                     imgPath: widget.imgPath,
                     globalPosition: center,
-                    scale: 1/ImagesBoardManager().scale,
+                    scale: 1 / ImagesBoardManager().scale,
                     width: scaleImgWidth,
                     height: scaleImgHeight,
                     image: img.data,
@@ -182,4 +185,3 @@ class DraggableImagePainter extends CustomPainter {
     return true;
   }
 }
-

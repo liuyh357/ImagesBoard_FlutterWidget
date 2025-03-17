@@ -1,3 +1,6 @@
+// 描述: 定义了 ImageItem 类，表示白板上的图像元素，支持图像加载、位置更新、标签管理、连接点（左右点）以及序列化/反序列化。
+// 关键功能: 图像的管理（如加载、缩放、移动）及其与标签和连接点的关联。
+
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -209,17 +212,17 @@ class ImageItem extends BoardItem {
   bool checkLabelsClick(Offset globalPoint, BuildContext context) {
     bool result = false;
     for (int i = 0; i < labels.length; i++) {
-        var element = labels[i];
-        if (element.checkInArea(globalPoint, false, context: context)) {
-            result = true;
-        }
+      var element = labels[i];
+      if (element.checkInArea(globalPoint, false, context: context)) {
+        result = true;
+      }
     }
     labels.insertAll(0, toAddLabels);
     toAddLabels.clear();
     labels.removeWhere((element) => toDeletLabels.contains(element));
     toDeletLabels.clear();
     return result;
-}
+  }
 
   void addLabel(String text, Color bgColor, Color textColor) {
     var label = BoardText(
@@ -234,7 +237,7 @@ class ImageItem extends BoardItem {
         this);
 
     // toAddLabels.add(label);
-    labels.insert(labels.length-1, label);
+    labels.insert(labels.length - 1, label);
   }
 
   void deleteLabel(String text) {

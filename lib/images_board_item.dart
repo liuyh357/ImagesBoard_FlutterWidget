@@ -1,3 +1,7 @@
+// 描述: 定义了白板上的基本元素类 BoardItem、BoardPoint 和 BoardLine，
+// 提供了位置、缩放、选择状态等基础属性和方法，用于表示图像、点和线条等元素。
+// 关键功能: 基础元素的行为（如点击、拖动、缩放）和线条的路径计算。
+
 import 'dart:math';
 import 'dart:ui';
 
@@ -239,7 +243,7 @@ class BoardLine {
         BoardPoint(midPoint, DateTime.now().millisecondsSinceEpoch)
           ..parentLine = this
           ..scale = boardScale
-          ..size=8);
+          ..size = 8);
   }
 
   void removePoint(int code) {
@@ -334,7 +338,7 @@ class BoardLine {
   }
 
   bool checkDelete(Offset globalPoint) {
-    if (isPointOnPath(globalPoint,false, rightClick: true)) {
+    if (isPointOnPath(globalPoint, false, rightClick: true)) {
       ImagesBoardManager().lastItemCode = code;
       print(' set code line');
       unclick();
@@ -344,7 +348,3 @@ class BoardLine {
     return false;
   }
 }
-
-
-
-

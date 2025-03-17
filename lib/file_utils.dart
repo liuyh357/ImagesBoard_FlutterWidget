@@ -1,3 +1,7 @@
+// file_utils.dart
+// 描述: 提供了文件选择对话框 FilePickerDialog，用于从文件系统中选择图像文件，支持Windows驱动器和目录导航。
+// 关键功能: 文件选择和路径管理。
+
 // import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';

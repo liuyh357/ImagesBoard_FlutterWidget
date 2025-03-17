@@ -1,3 +1,6 @@
+// 描述: 定义了 BoardText 类，表示白板上的文本标签，支持颜色设置和交互（如点击添加或删除标签）。
+// 关键功能: 文本标签的创建、样式修改和交互逻辑。
+
 import 'package:flutter/material.dart';
 import 'package:simple_canvas/floating_component_controller.dart';
 import 'package:simple_canvas/images_board.dart';
@@ -52,7 +55,6 @@ class BoardText extends BoardItem {
   void setText(String text) {
     this.text = text;
   }
-
 
   @override
   void click({BuildContext? context, Offset globalPoint = Offset.zero}) {

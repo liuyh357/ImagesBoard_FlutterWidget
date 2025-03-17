@@ -1,3 +1,6 @@
+// 描述: 项目入口文件，设置了应用的整体结构，包括 ImagesBoard 和图像选择区域，使用 Provider 提供状态管理。
+// 关键功能: 初始化应用，展示白板和图像选择界面。
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_canvas/draggable_image.dart';
@@ -5,8 +8,6 @@ import 'package:simple_canvas/images_board.dart';
 import 'file_utils.dart';
 // 在文件顶部添加
 // ... 已有导入 ...
-
-
 
 void main() {
   runApp(
@@ -55,14 +56,14 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
         children: [
           ImagesBoard(
             width: width,
-            height: height*0.6,
+            height: height * 0.6,
           ),
           IconButton(
               onPressed: () async {
                 var paths = FileUtils.pickFile(context);
                 paths.then((imgPaths) {
                   setState(() {
-                    if(imgPaths == null) return;
+                    if (imgPaths == null) return;
                     imagePaths!.addAll(imgPaths);
                   });
                 });
@@ -83,4 +84,3 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
     );
   }
 }
-

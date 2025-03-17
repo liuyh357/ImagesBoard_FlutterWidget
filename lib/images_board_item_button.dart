@@ -1,3 +1,7 @@
+// images_board_item_button.dart
+// 描述: 定义了 BoardDeleteButton 和 BoardArea 类，分别用于删除按钮和区域的管理，支持删除元素和区域的绘制。
+// 关键功能: 删除交互和区域的定义。
+
 import 'package:flutter/material.dart';
 import 'package:simple_canvas/images_board.dart';
 import 'package:simple_canvas/images_board_item.dart';
@@ -30,18 +34,19 @@ class BoardDeleteButton extends BoardItem {
 
   void setTopMDCodePoint(int codePoint, {Color color = Colors.white}) {
     topMDCodePoint = codePoint;
-    topMDIconColor = color;  
+    topMDIconColor = color;
   }
 
   void setBottomMDCodePoint(int codePoint, {Color color = Colors.white}) {
     bottomMDCodePoint = codePoint;
-    bottomMDIconColor = color; 
+    bottomMDIconColor = color;
   }
 
   @override
   bool inArea(Offset globalPoint) {
     // 将全局坐标转换为局部坐标
-    var localOffset = ImagesBoardManager().global2Local(globalPoint) + ImagesBoardManager().globalOffset;
+    var localOffset = ImagesBoardManager().global2Local(globalPoint) +
+        ImagesBoardManager().globalOffset;
 
     var totalScale = 1;
     // 应用缩放因子计算缩放后的宽度和高度
@@ -62,19 +67,19 @@ class BoardDeleteButton extends BoardItem {
   }
 
   @override
-  void click(){
+  void click() {
     var mng = ImagesBoardManager();
     if (mng.lastItemCode != 0) {
-      for(var item in mng.imageItems){
-        if (item.code == mng.lastItemCode){
+      for (var item in mng.imageItems) {
+        if (item.code == mng.lastItemCode) {
           var leftPoint = item.leftPoint;
           var rightPoint = item.rightPoint;
           List<BoardLine> toDelLines = [];
-          for(var line in mng.lines){
-            if (line.points.contains(leftPoint)){
+          for (var line in mng.lines) {
+            if (line.points.contains(leftPoint)) {
               toDelLines.add(line);
             }
-            if (line.points.contains(rightPoint)){
+            if (line.points.contains(rightPoint)) {
               toDelLines.add(line);
             }
           }
@@ -83,15 +88,15 @@ class BoardDeleteButton extends BoardItem {
           break;
         }
       }
-      for(var line in mng.lines){
-        if (line.code == mng.lastItemCode){
+      for (var line in mng.lines) {
+        if (line.code == mng.lastItemCode) {
           mng.lines.remove(line);
           break;
         }
       }
       mng.lastItemCode = 0;
     }
-  } 
+  }
 
   @override
   bool checkInArea(Offset globalPoint, bool isClicked) {
@@ -103,16 +108,12 @@ class BoardDeleteButton extends BoardItem {
     ImagesBoardManager().showDeleteButton = false;
     return result;
   }
-
-
 }
-
 
 class BoardArea extends BoardItem {
   List<ImageItem> items = [];
   Color bgColor = const Color.fromARGB(161, 255, 255, 255);
   Color sideColor = const Color.fromARGB(255, 174, 174, 174);
-  BoardArea(super.globalPosition, super.scale, super.width, super.height, super.code);
-  
+  BoardArea(
+      super.globalPosition, super.scale, super.width, super.height, super.code);
 }
-
