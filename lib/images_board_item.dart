@@ -238,7 +238,8 @@ class BoardLine {
         index,
         BoardPoint(midPoint, DateTime.now().millisecondsSinceEpoch)
           ..parentLine = this
-          ..scale = boardScale);
+          ..scale = boardScale
+          ..size=8);
   }
 
   void removePoint(int code) {
@@ -332,13 +333,18 @@ class BoardLine {
     return minDistance;
   }
 
-  void checkDelete(Offset globalPoint) {
-    var lastItemCode = ImagesBoardManager().lastItemCode;
-    if (lastItemCode != code && isPointOnPath(globalPoint,false, rightClick: true)) {
-      lastItemCode = code;
+  bool checkDelete(Offset globalPoint) {
+    if (isPointOnPath(globalPoint,false, rightClick: true)) {
+      ImagesBoardManager().lastItemCode = code;
+      print(' set code line');
       unclick();
       click();
-      // ImagesBoardManager().imageItems.remove(this);
+      return true;
     }
+    return false;
   }
 }
+
+
+
+

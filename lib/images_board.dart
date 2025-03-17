@@ -8,6 +8,7 @@ import 'dart:ui' as ui;
 
 import 'package:provider/provider.dart';
 import 'package:simple_canvas/images_board_item.dart';
+import 'package:simple_canvas/images_board_item_button.dart';
 import 'package:simple_canvas/images_board_item_img.dart';
 
 class ImagesBoardManager with ChangeNotifier {
@@ -54,6 +55,75 @@ class ImagesBoardManager with ChangeNotifier {
   BoardPoint? currentSelectedPoint;
 
   int lastItemCode = 0;
+
+  bool showDeleteButton = false;
+
+  BoardDeleteButton? deleteButton;
+
+  Offset areaStart = Offset.zero;
+
+  Offset areaEnd = Offset.zero;
+
+  List<ImageItem> toAddinArea = [];
+
+  List<BoardArea> areas = [];
+
+  bool isCreatingArea = false;
+
+  void checkInSelectedArea() {
+    if (areaStart == areaEnd) {
+      // print('未选择区域');
+      return;
+    }
+
+    // 确保 areaStart 是左上角，areaEnd 是右下角
+    double minX = min(areaStart.dx, areaEnd.dx);
+    double minY = min(areaStart.dy, areaEnd.dy);
+    double maxX = max(areaStart.dx, areaEnd.dx);
+    double maxY = max(areaStart.dy, areaEnd.dy);
+
+    // 清空 toAddinArea 列表
+    toAddinArea.clear();
+
+    // 遍历所有 ImageItem
+    for (var item in imageItems) {
+      // 获取 ImageItem 的中心位置
+      Offset center = item.localPosition + globalOffset;
+      // 检查中心位置是否在矩形区域内
+      if (center.dx >= minX &&
+          center.dx <= maxX &&
+          center.dy >= minY &&
+          center.dy <= maxY) {
+        toAddinArea.add(item);
+      }
+    }
+
+    // 如果 toAddinArea 不为空，则创建一个 BoardArea
+    if (toAddinArea.isNotEmpty) {
+      // 创建一个新的 BoardArea 对象
+      BoardArea area = BoardArea(
+        Offset((minX + maxX) / 2, (minY + maxY) / 2), // 区域中心位置
+        1, // 初始缩放比例
+        maxX - minX, // 区域宽度
+        maxY - minY, // 区域高度
+        DateTime.now().millisecondsSinceEpoch, // 区域代码
+      );
+
+      //todo: 后续添加弹窗设置区域的颜色，甚至标题
+      // 将 toAddinArea 中的所有 ImageItem 添加到 BoardArea 中
+      area.items.addAll(toAddinArea);
+      print('area items: ${area.items.length}');
+
+      // 将新的 BoardArea 添加到 areas 列表中
+      areas.add(area);
+    }
+    isCreatingArea = false;
+    areaStart = Offset.zero;
+    areaEnd = Offset.zero;
+    // 通知监听器数据已更新
+    clickFresh++;
+    notifyListeners();
+  }
 
   Offset global2Local(Offset point) {
     return point - boardOffset - globalOffset;
@@ -164,11 +234,21 @@ class _ImagesBoardState extends State<ImagesBoard> {
         ImagesBoardManager().boardWidth = renderBox.size.width;
         ImagesBoardManager().boardHeight = renderBox.size.height;
         ImagesBoardManager().boardOffset = renderBox.localToGlobal(Offset.zero);
+        ImagesBoardManager().deleteButton =
+            BoardDeleteButton(Offset.zero, 1, 40, 40, 0)
+              ..setLeftMDCodePoint(Icons.delete.codePoint, color: Colors.red);
       } else {
         print('renderBox is null');
       }
     });
     return Listener(
+      onPointerUp: (event) {
+        var mng = ImagesBoardManager();
+
+        if (mng.isCreatingArea) {
+          mng.checkInSelectedArea();
+        }
+      },
       onPointerSignal: (PointerSignalEvent event) {
         if (event is PointerScrollEvent) {
           // 检测到滚轮滚动事件
@@ -180,7 +260,7 @@ class _ImagesBoardState extends State<ImagesBoard> {
 
           if (ImagesBoardManager().enableDragging) {
             ImagesBoardManager()
-                .addScale(-event.scrollDelta.dy * 0.002, event.localPosition);
+                .addScale(-event.scrollDelta.dy * 0.0015, event.localPosition);
           } else {
             ImagesBoardManager()
                 .currentItem
@@ -192,26 +272,62 @@ class _ImagesBoardState extends State<ImagesBoard> {
         }
       },
       onPointerMove: (event) {
-        ImagesBoardManager().scale = ImagesBoardManager().oldScale;
+        var mng = ImagesBoardManager();
+        mng.scale = mng.oldScale;
         if (event.buttons == 1) {
           // print('鼠标移动事件');
-          ImagesBoardManager().mousePosition = event.localPosition;
+          mng.mousePosition = event.localPosition;
           // 检测到鼠标左键按下
-          if (ImagesBoardManager().enableDragging) {
-            ImagesBoardManager().globalOffset += event.delta;
+          if (mng.enableDragging) {
+            mng.globalOffset += event.delta;
           } else {
-            ImagesBoardManager().currentItem?.addOffset(event.delta);
-            ImagesBoardManager().currentSelectedPoint?.addOffset(event.delta);
+            mng.currentItem?.addOffset(event.delta);
+            mng.currentSelectedPoint?.addOffset(event.delta);
           }
-          ImagesBoardManager().clickFresh++;
-          ImagesBoardManager().updateView();
+          mng.clickFresh++;
+          mng.updateView();
+        } else if (event.buttons == 2) {
+          mng.isCreatingArea = true;
+          if (mng.areaStart == Offset.zero) {
+            mng.areaStart = event.localPosition;
+          }
+          mng.areaEnd = event.localPosition;
+          mng.clickFresh++;
+          mng.updateView();
         }
       },
       onPointerDown: (event) {
         // print('鼠标按下事件');
-        // if (event.buttons != 1)return;
+        ImagesBoardManager().mousePosition = event.localPosition;
+        if (event.buttons == 2) {
+          bool isClicked = false;
+          for (var item in ImagesBoardManager().imageItems.reversed) {
+            if (!isClicked && item.checkDelete(event.position)) {
+              isClicked = true;
+            }
+          }
+
+          for (var line in ImagesBoardManager().lines.reversed) {
+            if (!isClicked && line.checkDelete(event.position)) {
+              isClicked = true;
+            }
+          }
+          ImagesBoardManager().showDeleteButton = isClicked;
+          ImagesBoardManager().clickFresh++;
+          ImagesBoardManager().updateView();
+          return;
+        }
         ImagesBoardManager().oldScale = ImagesBoardManager().scale;
         bool isClicked = false;
+        if (ImagesBoardManager().showDeleteButton) {
+          if (ImagesBoardManager()
+              .deleteButton!
+              .checkInArea(event.position, isClicked)) {
+            isClicked = true;
+          }
+          ImagesBoardManager().showDeleteButton = false;
+          ImagesBoardManager().clickFresh++;
+        }
         for (var item in ImagesBoardManager().imageItems.reversed) {
           if (item.checkInArea(event.position, isClicked)) {
             ImagesBoardManager().currentItem = item;
@@ -226,7 +342,7 @@ class _ImagesBoardState extends State<ImagesBoard> {
             // print('点击了 点');
           }
           if (item.checkLabelsClick(event.position, context)) {
-            print('点击了 标签');
+            // print('点击了 标签');
           }
         }
         if (!isClicked) {
@@ -368,17 +484,130 @@ class ImagesBoardPainter extends CustomPainter {
     }
   }
 
+  void drawArea(Canvas canvas, BoardArea area) {
+    var mng = ImagesBoardManager();
+    var golobalOffset = mng.globalOffset;
+
+    double minX = double.infinity,
+        minY = double.infinity,
+        maxX = double.negativeInfinity,
+        maxY = double.negativeInfinity;
+    for (var item in area.items) {
+      var totalScale = mng.scale * area.scale;
+      minX = min(minX, item.getLeft(totalScale) + golobalOffset.dx);
+      minY = min(minY, item.getBottom(totalScale) + golobalOffset.dy);
+      maxX = max(maxX, item.getRight(totalScale) + golobalOffset.dx);
+      maxY = max(maxY, item.getTop(totalScale) + golobalOffset.dy);
+    }
+
+    // print(' minX: $minX, minY: $minY, maxX: $maxX, maxY: $maxY');
+
+    // 确保计算出有效的矩形边界
+    if (minX == double.infinity ||
+        minY == double.infinity ||
+        maxX == double.negativeInfinity ||
+        maxY == double.negativeInfinity) {
+      return;
+    }
+
+    var width = maxX - minX;
+    var height = maxY - minY;
+
+    var rect = Rect.fromCenter(
+        center: Offset((minX + maxX) / 2, (minY + maxY) / 2),
+        width: width * (1 + mng.scale / 10),
+        height: height * (1 + mng.scale / 10));
+
+    // 绘制背景填充
+    var bgPaint = Paint()
+      ..color = area.bgColor
+      ..style = PaintingStyle.fill;
+    double borderRadius = mng.scale * 2; // 圆角半径
+    var rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
+    canvas.drawRRect(rrect, bgPaint);
+
+    // 绘制边框
+    var sidePaint = Paint()
+      ..color = area.sideColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = mng.scale * 2; // 边框宽度
+    canvas.drawRRect(rrect, sidePaint);
+  }
+
+  void drawCreatingArea(Canvas canvas) {
+    var mng = ImagesBoardManager();
+    var start = mng.areaStart;
+    var end = mng.areaEnd;
+    var width = end.dx - start.dx;
+    var height = end.dy - start.dy;
+    var rect = Rect.fromLTWH(start.dx, start.dy, width, height);
+    var paint = Paint()
+      ..color = const Color.fromARGB(129, 54, 206, 244).withOpacity(0.3);
+    canvas.drawRect(rect, paint);
+  }
+
+  void drawDeleteButton(Canvas canvas) {
+    var mng = ImagesBoardManager();
+    var button = mng.deleteButton!;
+    var leftMDCodePoint = button.leftMDCodePoint;
+    var position = mng.mousePosition;
+    var width = button.width;
+    var height = button.height;
+    var iconColor = button.leftMDIconColor;
+
+    // 计算矩形的位置和大小
+    double left = position.dx - width / 2;
+    double top = position.dy - height / 2;
+    double right = position.dx + width / 2;
+    double bottom = position.dy + height / 2;
+    var rect = Rect.fromLTRB(left, top, right, bottom);
+
+    // 绘制阴影
+    var shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.3)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 10);
+    var shadowRRect = RRect.fromRectAndRadius(rect, Radius.circular(10));
+    canvas.drawRRect(shadowRRect, shadowPaint);
+
+    // 绘制圆角矩形
+    var rectPaint = Paint()..color = Colors.white;
+    var rrect = RRect.fromRectAndRadius(rect, Radius.circular(10));
+    canvas.drawRRect(rrect, rectPaint);
+
+    // 绘制图标
+    var textPainter = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(leftMDCodePoint),
+        style: TextStyle(
+          color: iconColor,
+          fontSize: width * 0.6, // 调整字体大小
+          fontFamily: 'MaterialIcons', // 使用 Material Icons 字体
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    // 计算文字的位置，使其居中
+    double textX = position.dx - textPainter.width / 2;
+    double textY = position.dy - textPainter.height / 2;
+    button.localPosition = Offset(textX, textY);
+
+    // 绘制文字
+    textPainter.paint(canvas, Offset(textX, textY));
+  }
+
   void drawLabels(
       ImageItem item, Canvas canvas, Offset globalOffset, double totalScale) {
+    double standardLong =
+        (item.width > item.height ? item.width : item.height) * totalScale;
     var maxWidth = item.width * totalScale;
     var height = maxWidth * 0.1;
     var maxTextWidth = maxWidth * 0.9;
     // int lineIndex = 0;
     double lineOffset = 0;
-    var fontSize = height * 0.6;
+    var fontSize = standardLong * 0.05;
     double yOffset = height * 0.5; // 用于记录当前行的垂直偏移
-    double standardLong =
-        (item.width > item.height ? item.width : item.height) * totalScale;
+
     // 计算图片左下角的位置
     double left =
         item.localPosition.dx - item.width * totalScale / 2 + globalOffset.dx;
@@ -417,6 +646,7 @@ class ImagesBoardPainter extends CustomPainter {
         // lineIndex++;
         lineOffset = 0;
         yOffset += rectHeight + standardLong * 0.05; // 增加行间距
+        item.labelsHeight = yOffset + rectHeight + standardLong * 0.05;
       }
 
       // 计算矩形的位置，从左下角开始
@@ -578,6 +808,10 @@ class ImagesBoardPainter extends CustomPainter {
       }
     }
 
+    for (var area in imagesBoardManager.areas) {
+      drawArea(canvas, area);
+    }
+
     for (var line in imagesBoardManager.lines) {
       drawLine(line, canvas, globalOffset, scale);
     }
@@ -587,6 +821,12 @@ class ImagesBoardPainter extends CustomPainter {
             scale / oldScale);
         drawLabels(item, canvas, globalOffset, scale * item.scale);
       }
+    }
+    if (ImagesBoardManager().showDeleteButton) {
+      drawDeleteButton(canvas);
+    }
+    if (ImagesBoardManager().isCreatingArea) {
+      drawCreatingArea(canvas);
     }
   }
 

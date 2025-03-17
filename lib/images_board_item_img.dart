@@ -15,6 +15,7 @@ class ImageItem extends BoardItem {
   List<BoardText> labels = [];
   List<BoardText> toDeletLabels = [];
   List<BoardText> toAddLabels = [];
+  double labelsHeight = 0;
 
   ImageItem(
       {required Offset globalPosition,
@@ -131,14 +132,17 @@ class ImageItem extends BoardItem {
     return result;
   }
 
-  void checkDelete(Offset globalPoint) {
-    var lastItemCode = ImagesBoardManager().lastItemCode;
-    if (lastItemCode != code && inArea(globalPoint)) {
-      lastItemCode = code;
+  bool checkDelete(Offset globalPoint) {
+    if (inArea(globalPoint)) {
+      ImagesBoardManager().lastItemCode = code;
+      print('set code img');
+
       unclick();
       click();
       // ImagesBoardManager().imageItems.remove(this);
+      return true;
     }
+    return false;
   }
 
   bool enableBoardDragging() {
@@ -183,7 +187,7 @@ class ImageItem extends BoardItem {
       localPosition.dx + width * totalScale / 2;
 
   double getBottom(double totalScale) =>
-      localPosition.dy - height * totalScale / 2;
+      localPosition.dy - height * totalScale / 2 - labelsHeight;
 
   bool checkPointsOnTap(Offset position) {
     //todo: 后续可能要加上完整的四个点的点击判断

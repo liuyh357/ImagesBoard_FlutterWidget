@@ -53,25 +53,6 @@ class BoardText extends BoardItem {
     this.text = text;
   }
 
-  // @override
-  // bool inArea(Offset globalPoint) {
-  //   // 将全局坐标转换为局部坐标
-  //   var localOffset = ImagesBoardManager().global2Local(globalPoint);
-  //   double scaledWidth = width;
-  //   double scaledHeight = height;
-
-  //   // 计算图片矩形的边界
-  //   double left = localPosition.dx - scaledWidth / 2;
-  //   double top = localPosition.dy - scaledHeight / 2;
-  //   double right = localPosition.dx + scaledWidth / 2;
-  //   double bottom = localPosition.dy + scaledHeight / 2;
-
-  //   // 检查局部坐标是否在图片矩形范围内
-  //   return localOffset.dx >= left &&
-  //       localOffset.dx <= right &&
-  //       localOffset.dy >= top &&
-  //       localOffset.dy <= bottom;
-  // }
 
   @override
   void click({BuildContext? context, Offset globalPoint = Offset.zero}) {
